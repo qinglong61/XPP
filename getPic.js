@@ -5,7 +5,6 @@ const hostname = '127.0.0.1';
 const port = 8080;
 
 http.createServer((req, res) => {
-  var arg = url.parse(req.url).query;
   var arg = url.parse(req.url, true).query;
 
   // ServerResponse
@@ -37,5 +36,5 @@ http.createServer((req, res) => {
   });
 
 }).listen(port, hostname, () => {
-  console.log(`Server running at http://${hostname}:${port}/`);
+  console.log(`Server running at http:\/\/${hostname}:${port}\/`);
 });
