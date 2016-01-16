@@ -7,9 +7,10 @@ const port = 8080;// port 3000 for koding.com
 
 http.createServer((req, res) => {
     var arg = url.parse(req.url, true).query;
-    if (arg.url) {
-        var hostname = url.parse(arg.url, true).hostname;
-        var path = url.parse(arg.url, true).path;
+    var requestURL = unescape(arg.url);
+    if (requestURL) {
+        var hostname = url.parse(requestURL, true).hostname;
+        var path = url.parse(requestURL, true).path;
         var headers = req.headers;
         headers.host = hostname;
         var options = {
@@ -17,7 +18,7 @@ http.createServer((req, res) => {
             path: path,
             headers: headers
         };
-        var protocol = url.parse(arg.url).protocol;
+        var protocol = url.parse(requestURL).protocol;
         if (protocol == 'http:') {
             http.get(options, function(res1) {
                 res.writeHead(res1.statusCode, res1.headers);
