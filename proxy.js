@@ -1,53 +1,27 @@
-var http = require('http');
-var net = require('net');
-var url = require('url');
+const net = require('net');
 
-// Create an HTTP tunneling proxy
-var proxy = http.createServer(function (req, res) {
-  res.writeHead(200, {'Content-Type': 'text/plain'});
-  res.end('okay');
-});
-proxy.on('connect', function(req, cltSocket, head) {
-  // connect to an origin server
-  var srvUrl = url.parse('http://' + req.url);
-  var srvSocket = net.connect(srvUrl.port, srvUrl.hostname, function() {
-    cltSocket.write('HTTP/1.1 200 Connection Established\r\n' +
-                    'Proxy-agent: Node.js-Proxy\r\n' +
-                    '\r\n');
-    srvSocket.write(head);
-    srvSocket.pipe(cltSocket);
-    cltSocket.pipe(srvSocket);
-  });
-});
+const port = 8989;
 
-// now that proxy is running
-proxy.listen(1337, '127.0.0.1', function() {
+const proxy = net.createServer((fromClientSocket) => {
+    const toServerSocket = net.Socket();
+    toServerSocket.connect({
+        host: fromClientSocket.remoteAddress,
+        port: fromClientSocket.remotePort,
+        localAddress: fromClientSocket.localAddress,
+        localPort: fromClientSocket.localPort
+    }, () => {
 
-  // make a request to a tunneling proxy
-  var options = {
-    port: 1337,
-    hostname: '127.0.0.1',
-    method: 'CONNECT',
-    path: 'www.baidu.com:80'
-  };
-
-  //create a client
-  var req = http.request(options);
-  req.end();
-
-  req.on('connect', function(res, socket, head) {
-    console.log('got connected!');
-
-    // make a request over an HTTP tunnel
-    socket.write('GET / HTTP/1.1\r\n' +
-                 'Host: www.baidu.com:80\r\n' +
-                 'Connection: close\r\n' +
-                 '\r\n');
-    socket.on('data', function(chunk) {
-      console.log(chunk.toString());
+    }).on('data', (data) => {
+        fromClientSocket.write(data);
+    }).on('end', () => {
+        fromClientSocket.end();
     });
-    socket.on('end', function() {
-      proxy.close();
+
+    fromClientSocket.on('data', (data) => {
+        toServerSocket.write(data);
+    }).on('end', () => {
+        toServerSocket.end();
     });
-  });
+}).listen(port, () => {
+    console.log(`Proxy server running at port:${port}`);
 });
